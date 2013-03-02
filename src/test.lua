@@ -15,7 +15,7 @@ local function testset(title, tests)
 end
 
 -- headers
-local headers = {
+testset('Headers', {
   {markdown = '# This is an H1',
    html = '<h1>This is an H1</h1>'},
   {markdown = '## This is an H2',
@@ -48,6 +48,35 @@ local headers = {
    html = '<h1>First header</h1>\n' ..
           '<h2>Second header</h2>\n' ..
           '<h3>Third header</h3>'}
-}
+})
 
-testset('Headers', headers)
+-- paragraphs and linebreaks
+testset('Paragraphs + Linebreaks', {
+  {markdown = 'Some\nText',
+   html = '<p>Some\nText</p>'},
+  {markdown = 'Two\n\nParagraphs',
+   html = '<p>Two</p>\n<p>Paragraphs</p>'},
+  {markdown = 'Linebroken  \nParagraph',
+   html = '<p>Linebroken  <br />\nParagraph</p>'},
+  {markdown = 'No break before end  ',
+   html = '<p>No break before end  </p>'}
+})
+
+-- document
+testset('Document', {
+  {markdown = '# H1\n' ..
+              'Paragraph\n' ..
+              '## H2 ##\n'..
+              '\n' ..
+              'Linebroken  \nParagraph\n' ..
+              '## H2\n' ..
+              'Paragraph with ending whitespace  \n' ..
+              '### H3',
+   html = '<h1>H1</h1>\n' ..
+          '<p>Paragraph</p>\n' ..
+          '<h2>H2</h2>\n'..
+          '<p>Linebroken  <br />\nParagraph</p>\n' ..
+          '<h2>H2</h2>\n' ..
+          '<p>Paragraph with ending whitespace  </p>\n' ..
+          '<h3>H3</h3>'}
+})

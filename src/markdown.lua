@@ -81,15 +81,35 @@ end
 -- @return  line
 -----------------------------------------------------------------------------
 function classify(line)
+  -- blank
+  if line == '' then
+    return {type = 'blank'}
+  end
+
   -- headers
   local h_level, h_text = line:match('^(#+)[ \t]*(.-)[ \t]*#*[ \t]*$')
-  if 1 <= h_level:len() and h_level:len() <= 6 and h_text then
+  if h_level and 1 <= h_level:len() and h_level:len() <= 6 and h_text then
     return {
       type = 'header',
       level = h_level:len(),
       text = h_text
     }
   end
+
+  -- line breaks
+  local br_text = line:match('^.*  $')
+  if br_text then
+    return {
+      type = 'linebreak',
+      text = br_text
+    }
+  end
+
+  -- regular lines
+  return {
+    type = 'regular',
+    text = line
+  }
 end
 
 -----------------------------------------------------------------------------
@@ -100,15 +120,49 @@ end
 -----------------------------------------------------------------------------
 function htmlize(lines)
   local htmlized = {}
+
   local formats = {
-    header = '<h%u>%s</h%u>'
+    header = '<h%u>%s</h%u>',
+    linebreak = '%s<br />',
+    paragraph_start = '<p>%s',
+    paragraph_end = '%s</p>'
   }
 
-  for _, line in ipairs(lines) do
+  -- paragraph tag helper
+  local function paragraph_line(index, line)
+    local paragraphs = { linebreak = 1, regular = 1 }
+
+    if not lines[index-1] or not (paragraphs)[lines[index-1].type] then
+      line = formats.paragraph_start:format(line)
+    end
+
+    if lines[index].type == 'linebreak' and
+       lines[index+1] and (paragraphs)[lines[index+1].type] then
+      line = formats.linebreak:format(line)
+    elseif not lines[index+1] or not (paragraphs)[lines[index+1].type] then
+      line = formats.paragraph_end:format(line)
+    end
+
+    return line
+  end
+
+  -- convert lines to html
+  local previous = 0
+
+  for index, line in ipairs(lines) do
+    -- header
     if line.type == 'header' then
       table.insert(
         htmlized,
         formats.header:format(line.level, line.text, line.level)
+      )
+    end
+
+    -- paragraphs and linebreaks
+    if line.type == 'regular' or line.type == 'linebreak' then
+      table.insert(
+        htmlized,
+        paragraph_line(index, line.text)
       )
     end
   end
@@ -123,7 +177,7 @@ end
 -- @return  text
 -----------------------------------------------------------------------------
 return function(text)
-  if not text:len() then
+  if not text or not text:len() then
     return text
   end
 
