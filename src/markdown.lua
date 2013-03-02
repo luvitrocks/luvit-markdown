@@ -13,8 +13,8 @@ local classify, convert, htmlize, map, sanitize, split
 function map(t, f)
   local mapped = {}
 
-  for index, value in pairs(t) do
-    mapped[index] = f(value)
+  for _, value in ipairs(t) do
+    table.insert(mapped, f(value))
   end
 
   return mapped
@@ -46,12 +46,12 @@ function split(text)
   while true do
     local left, right = text:find('\n', pos)
 
-    if not start then
+    if not left then
       table.insert(lines, text:sub(pos))
       break
     end
 
-    table.insert(lines, text:sub(pos, start - 1))
+    table.insert(lines, text:sub(pos, left - 1))
     pos = right + 1
   end
 

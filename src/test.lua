@@ -2,6 +2,18 @@ local markdown = require './markdown'
 
 assert(type(markdown) == 'function')
 
+-- test helper
+local function testset(title, tests)
+  process.stdout:write('Testing: ' .. title .. ' ')
+
+  for _,test in pairs(tests) do
+    assert(test.html == markdown(test.markdown))
+    process.stdout:write('.')
+  end
+
+  process.stdout:write('\n')
+end
+
 -- headers
 local headers = {
   {markdown = '# This is an H1',
@@ -29,8 +41,13 @@ local headers = {
    html = '<h5>This is an H5</h5>'},
   {markdown = '###### This is an H6 ######',
    html = '<h6>This is an H6</h6>'},
+
+  {markdown = '# First header\n' ..
+              '## Second header##\n' ..
+              '### Third header',
+   html = '<h1>First header</h1>\n' ..
+          '<h2>Second header</h2>\n' ..
+          '<h3>Third header</h3>'}
 }
 
-for _,header in pairs(headers) do
-  assert(header.html == markdown(header.markdown))
-end
+testset('Headers', headers)
