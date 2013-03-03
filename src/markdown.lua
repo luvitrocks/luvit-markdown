@@ -147,7 +147,7 @@ function emphasize(line)
     local patterns = {
       em .. '([^%s_])' .. em,
       em .. '(<strong>[^%s_]</strong>)' .. em,
-      em .. '([^%s_][^<>_]-[^%s_])' .. em,
+      em .. '([^%s][^<>_]-[^%s])' .. em,
       em .. '([^<>_]-<strong>[^<>_]-</strong>[^<>_]-)' .. em
     }
 
@@ -158,9 +158,6 @@ function emphasize(line)
 
   return line
 end
-
-
-
 
 -----------------------------------------------------------------------------
 -- Converts table of Markdown lines to table of HTML lines.

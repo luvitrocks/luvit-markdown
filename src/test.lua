@@ -1,3 +1,9 @@
+-----------------------------------------------------------------------------
+-- Markdown test suite.
+--
+-- @see http://daringfireball.net/projects/markdown/dingus
+-----------------------------------------------------------------------------
+
 local markdown = require './markdown'
 
 assert(type(markdown) == 'function')
@@ -7,7 +13,13 @@ local function testset(title, tests)
   process.stdout:write('Testing: ' .. title .. ' ')
 
   for _,test in pairs(tests) do
-    assert(test.html == markdown(test.markdown))
+    assert(
+      test.html == markdown(test.markdown),
+      'assertion failed!\n' ..
+      'expected: ' .. test.html ..
+      'returned: ' .. markdown(test.markdown)
+    )
+
     process.stdout:write('.')
   end
 
@@ -43,10 +55,13 @@ testset('Paragraphs + Linebreaks', {
 
 -- emphasis
 testset('Emphasis', {
-  {markdown = '***strong and em***', html = '<p><strong><em>strong and em</em></strong></p>'},
-  {markdown = 'strong ***and*** em', html = '<p>strong <strong><em>and</em></strong> em</p>'},
-  {markdown = '___strong and em___', html = '<p><strong><em>strong and em</em></strong></p>'},
-  {markdown = 'strong ___and___ em', html = '<p>strong <strong><em>and</em></strong> em</p>'},
+  {markdown = 'with ***strong and em***', html = '<p>with <strong><em>strong and em</em></strong></p>'},
+  {markdown = 'with strong ***and*** em', html = '<p>with strong <strong><em>and</em></strong> em</p>'},
+  {markdown = 'with ___strong and em___', html = '<p>with <strong><em>strong and em</em></strong></p>'},
+  {markdown = 'with strong ___and___ em', html = '<p>with strong <strong><em>and</em></strong> em</p>'},
+  {markdown = 'not* emphasized*', html = '<p>not* emphasized*</p>'},
+  {markdown = 'single l*e*tt__e__r', html = '<p>single l<em>e</em>tt<strong>e</strong>r</p>'},
+  {markdown = 'mixed __x __weird', html = '<p>mixed <em>_x _</em>weird</p>'}
 })
 
 -- document
