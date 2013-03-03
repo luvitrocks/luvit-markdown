@@ -1,7 +1,7 @@
 local table = require 'table'
 
 -- forward declaration of methods
-local classify, convert, htmlize, map, sanitize, split
+local classify, convert, emphasize, htmlize, map, sanitize, split
 
 -----------------------------------------------------------------------------
 -- Maps each entry of a table "t{i=v}" to a local function "f(v)".
@@ -27,6 +27,10 @@ end
 -- @return  text
 -----------------------------------------------------------------------------
 function sanitize(text)
+  if not text or not text:len() then
+    return text
+  end
+
   text = text:gsub('\r\n', '\n')
   text = text:gsub('\r', '\n')
 
@@ -58,7 +62,6 @@ function split(text)
   return lines
 end
 
-
 -----------------------------------------------------------------------------
 -- Converts text from Markdown to HTML.
 --
@@ -69,6 +72,7 @@ function convert(text)
   local lines = split(text)
 
   lines = map(lines, classify)
+  lines = map(lines, emphasize)
   lines = htmlize(lines)
 
   return table.concat(lines, '\n')
@@ -111,6 +115,52 @@ function classify(line)
     text = line
   }
 end
+
+-----------------------------------------------------------------------------
+-- Converts Markdown emphasis in a line to corresponding HTML tags.
+--
+-- @param   line
+-- @return  line
+-----------------------------------------------------------------------------
+function emphasize(line)
+  if line.type == 'blank' then
+    return line
+  end
+
+  emphasis = {
+    strong = {'%*%*', '%_%_'},
+    em = {'%*', '%_'}
+  }
+
+  for _, strong in ipairs(emphasis.strong) do
+    local patterns = {
+      strong .. '([^%s][%*%_]?)' .. strong,
+      strong .. '([^%s][^<>]-[^%s][%*%_]?)' .. strong
+    }
+
+    for _, pattern in ipairs(patterns) do
+      line.text = line.text:gsub(pattern, '<strong>%1</strong>')
+    end
+  end
+
+  for _, em in ipairs(emphasis.em) do
+    local patterns = {
+      em .. '([^%s_])' .. em,
+      em .. '(<strong>[^%s_]</strong>)' .. em,
+      em .. '([^%s_][^<>_]-[^%s_])' .. em,
+      em .. '([^<>_]-<strong>[^<>_]-</strong>[^<>_]-)' .. em
+    }
+
+    for _, pattern in ipairs(patterns) do
+      line.text = line.text:gsub(pattern, '<em>%1</em>')
+    end
+  end
+
+  return line
+end
+
+
+
 
 -----------------------------------------------------------------------------
 -- Converts table of Markdown lines to table of HTML lines.
