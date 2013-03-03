@@ -45,6 +45,17 @@ testset('Headers', {
    html = '<h1>First header</h1>\n<h2>Second header</h2>\n<h3>Third header</h3>'}
 })
 
+-- lists
+testset('Lists', {
+  {markdown = '* foo', html = '<ul>\n<li>foo</li>\n</ul>'},
+  {markdown = '+ foo', html = '<ul>\n<li>foo</li>\n</ul>'},
+  {markdown = '- foo', html = '<ul>\n<li>foo</li>\n</ul>'},
+  {markdown = '1. foo', html = '<ol>\n<li>foo</li>\n</ol>'},
+  {markdown = '* foo\n+ bar\n- baz', html = '<ul>\n<li>foo</li>\n<li>bar</li>\n<li>baz</li>\n</ul>'},
+  {markdown = '7. foo\n662. bar\n1. baz', html = '<ol>\n<li>foo</li>\n<li>bar</li>\n<li>baz</li>\n</ol>'},
+  {markdown = '* foo\n1. bar\n- baz', html = '<ul>\n<li>foo</li>\n</ul>\n<ol>\n<li>bar</li>\n</ol>\n<ul>\n<li>baz</li>\n</ul>'}
+})
+
 -- paragraphs and linebreaks
 testset('Paragraphs + Linebreaks', {
   {markdown = 'Some\nText', html = '<p>Some\nText</p>'},
@@ -76,8 +87,10 @@ testset('Anchors', {
 -- document
 testset('Document', {
   {markdown = '# H1\nParagraph\n[linkage]: http://somepage.tld "with a title!"\n## H2 ##\n\nLinebroken  \nParagraph\n' ..
-              '## H2\n[linkage]\nParagraph with **emphasized** whitespace  \n### _H3_',
+              '## H2\n[linkage]\nParagraph with **emphasized** whitespace  \n### _H3_\n+ just a list\n1. stylechange!\n' ..
+              '__incredible stuff__',
    html = '<h1>H1</h1>\n<p>Paragraph</p>\n<h2>H2</h2>\n<p>Linebroken  <br />\nParagraph</p>\n<h2>H2</h2>\n' ..
           '<p><a href="http://somepage.tld" title="with a title!">linkage</a>\n' ..
-          'Paragraph with <strong>emphasized</strong> whitespace  </p>\n<h3><em>H3</em></h3>'}
+          'Paragraph with <strong>emphasized</strong> whitespace  </p>\n<h3><em>H3</em></h3>\n<ul>\n<li>just a list</li>\n</ul>\n' ..
+          '<ol>\n<li>stylechange!</li>\n</ol>\n<p><strong>incredible stuff</strong></p>'}
 })

@@ -108,7 +108,7 @@ function anchorize(text)
   text = text:gsub('(%b[])[^(\n]?', set_references)
 
   -- parse anchors
-  return text:gsub("(%b[])(%b())", set_inlines)
+  return text:gsub('(%b[])(%b())', set_inlines)
 end
 
 -----------------------------------------------------------------------------
@@ -172,6 +172,25 @@ function classify(line)
       type = 'header',
       level = h_level:len(),
       text = h_text
+    }
+  end
+
+  -- lists
+  local ol_text = line:match('^ ? ? ?%d+%.[ \t]+(.+)')
+  if ol_text then
+    return {
+      type = 'list',
+      style = 'numeric',
+      text = ol_text
+    }
+  end
+
+  local ul_text = line:match('^ ? ? ?[%*%+%-][ \t]+(.+)')
+  if ul_text then
+    return {
+      type = 'list',
+      style = 'bullet',
+      text = ul_text
     }
   end
 
@@ -245,23 +264,55 @@ function htmlize(lines)
 
   local formats = {
     header = '<h%u>%s</h%u>',
+    list_numeric_start = '<ol>',
+    list_numeric_end = '</ol>',
+    list_bullet_start = '<ul>',
+    list_bullet_end = '</ul>',
+    list_item = '<li>%s</li>',
     linebreak = '%s<br />',
     paragraph_start = '<p>%s',
     paragraph_end = '%s</p>'
   }
 
+  -- list tag helper
+  local function list_line(index, line)
+    local elements = {}
+    local prev_line = lines[index-1]
+    local cur_line = lines[index]
+    local next_line = lines[index+1]
+
+    if not prev_line or not (prev_line.type == cur_line.type) or
+       not (prev_line.style == cur_line.style) then
+      table.insert(elements, formats['list_' .. cur_line.style .. '_start'])
+    end
+
+    table.insert(elements, formats.list_item:format(line))
+
+
+    if not next_line or not (next_line.type == cur_line.type) or
+       not (next_line.style == cur_line.style) then
+      table.insert(elements, formats['list_' .. cur_line.style .. '_end'])
+    end
+
+    return elements
+  end
+
   -- paragraph tag helper
   local function paragraph_line(index, line)
     local paragraphs = { linebreak = 1, regular = 1 }
 
-    if not lines[index-1] or not (paragraphs)[lines[index-1].type] then
+    local prev_line = lines[index-1]
+    local cur_line = lines[index]
+    local next_line = lines[index+1]
+
+    if not prev_line or not (paragraphs)[prev_line.type] then
       line = formats.paragraph_start:format(line)
     end
 
-    if lines[index].type == 'linebreak' and
-       lines[index+1] and (paragraphs)[lines[index+1].type] then
+    if cur_line.type == 'linebreak' and
+       next_line and (paragraphs)[next_line.type] then
       line = formats.linebreak:format(line)
-    elseif not lines[index+1] or not (paragraphs)[lines[index+1].type] then
+    elseif not next_line or not (paragraphs)[next_line.type] then
       line = formats.paragraph_end:format(line)
     end
 
@@ -269,8 +320,6 @@ function htmlize(lines)
   end
 
   -- convert lines to html
-  local previous = 0
-
   for index, line in ipairs(lines) do
     -- header
     if line.type == 'header' then
@@ -278,6 +327,13 @@ function htmlize(lines)
         htmlized,
         formats.header:format(line.level, line.text, line.level)
       )
+    end
+
+    -- lists
+    if line.type == 'list' then
+      for _,l in ipairs(list_line(index, line.text)) do
+        table.insert(htmlized, l)
+      end
     end
 
     -- paragraphs and linebreaks
