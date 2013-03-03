@@ -1,7 +1,7 @@
 local table = require 'table'
 
 -- forward declaration of methods
-local classify, convert, emphasize, htmlize, map, sanitize, split
+local anchorize, classify, convert, emphasize, htmlize, map, sanitize, split
 
 -----------------------------------------------------------------------------
 -- Maps each entry of a table "t{i=v}" to a local function "f(v)".
@@ -35,6 +35,80 @@ function sanitize(text)
   text = text:gsub('\r', '\n')
 
   return text
+end
+
+-----------------------------------------------------------------------------
+-- Converts link references to inline links.
+--
+-- @param   text
+-- @return  text
+-----------------------------------------------------------------------------
+function anchorize(text)
+  local references = {}
+  local linkdef = ' ? ? ?(%b[]):[ \t]*([^%s]+)[ \t\n]'
+  local patterns = {
+    linkdef .. '[ \t]*["]([^\n]+)["][ \t]*',
+    linkdef .. '[ \t]*[\']([^\n]+)[\'][ \t]*',
+    linkdef .. '[ \t]*[(]([^\n]+)[)][ \t]*',
+    linkdef
+  }
+
+  -- reference indexer
+  local function get_references(id, url, title)
+    id = id:match('%[(.+)%]'):lower()
+
+    references[id] = {
+      url = url,
+      title = title
+    }
+
+    return ''
+  end
+
+  -- reference converter
+  local function set_references(id)
+    id = id:match('%[(.+)%]'):lower()
+
+    if not references[id] then
+      return '[' .. id .. ']'
+    end
+
+    if references[id].title then
+      return ('[%s](%s "%s")'):format(id, references[id].url, references[id].title)
+    else
+      return ('[%s](%s)'):format(id, references[id].url)
+    end
+  end
+
+  -- inline converter
+  local function set_inlines(text, def)
+    text = text:match('%[(.+)%]'):lower()
+    local patterns = {
+      '%((.-)[ \t]*"(.-)"%)',
+      '%((.-)[ \t]*\'(.-)\'%)',
+      '%((.-)%)',
+    }
+
+    for _, pattern in ipairs(patterns) do
+      local url, title = def:match(pattern)
+
+      if url and title then
+        return ('<a href="%s" title="%s">%s</a>'):format(url, title, text)
+      elseif url then
+        return ('<a href="%s">%s</a>'):format(url, text)
+      end
+    end
+  end
+
+  -- parse references
+  for _,pattern in ipairs(patterns) do
+    text = text:gsub(pattern, get_references)
+  end
+
+  text = text:gsub('(%b[])[^(\n]?', set_references)
+
+  -- parse anchors
+  return text:gsub("(%b[])(%b())", set_inlines)
 end
 
 -----------------------------------------------------------------------------
@@ -73,6 +147,7 @@ function convert(text)
 
   lines = map(lines, classify)
   lines = map(lines, emphasize)
+
   lines = htmlize(lines)
 
   return table.concat(lines, '\n')
@@ -229,6 +304,7 @@ return function(text)
   end
 
   text = sanitize(text)
+  text = anchorize(text)
   text = convert(text)
 
   return text

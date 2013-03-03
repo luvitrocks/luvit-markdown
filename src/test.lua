@@ -64,21 +64,20 @@ testset('Emphasis', {
   {markdown = 'mixed __x __weird', html = '<p>mixed <em>_x _</em>weird</p>'}
 })
 
+-- anchors
+testset('Anchors', {
+  {markdown = '[foo](/bar)', html = '<p><a href="/bar">foo</a></p>'},
+  {markdown = '[foo](/bar "desc")', html = '<p><a href="/bar" title="desc">foo</a></p>'},
+  {markdown = '[foo](/bar \'desc\')', html = '<p><a href="/bar" title="desc">foo</a></p>'},
+  {markdown = '[foo]: http://x.y/ "optional"\n[foo]', html = '<p><a href="http://x.y/" title="optional">foo</a></p>'},
+  {markdown = '[foo]: http://x.y/ "optional"\n[foo]: http://y.x/ "override"\n[foo]', html = '<p><a href="http://y.x/" title="override">foo</a></p>'}
+})
+
 -- document
 testset('Document', {
-  {markdown = '# H1\n' ..
-              'Paragraph\n' ..
-              '## H2 ##\n'..
-              '\n' ..
-              'Linebroken  \nParagraph\n' ..
-              '## H2\n' ..
-              'Paragraph with **emphasized** whitespace  \n' ..
-              '### _H3_',
-   html = '<h1>H1</h1>\n' ..
-          '<p>Paragraph</p>\n' ..
-          '<h2>H2</h2>\n'..
-          '<p>Linebroken  <br />\nParagraph</p>\n' ..
-          '<h2>H2</h2>\n' ..
-          '<p>Paragraph with <strong>emphasized</strong> whitespace  </p>\n' ..
-          '<h3><em>H3</em></h3>'}
+  {markdown = '# H1\nParagraph\n[linkage]: http://somepage.tld "with a title!"\n## H2 ##\n\nLinebroken  \nParagraph\n' ..
+              '## H2\n[linkage]\nParagraph with **emphasized** whitespace  \n### _H3_',
+   html = '<h1>H1</h1>\n<p>Paragraph</p>\n<h2>H2</h2>\n<p>Linebroken  <br />\nParagraph</p>\n<h2>H2</h2>\n' ..
+          '<p><a href="http://somepage.tld" title="with a title!">linkage</a>\n' ..
+          'Paragraph with <strong>emphasized</strong> whitespace  </p>\n<h3><em>H3</em></h3>'}
 })
