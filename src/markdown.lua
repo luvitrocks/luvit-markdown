@@ -160,9 +160,26 @@ end
 -- @return  line
 -----------------------------------------------------------------------------
 function classify(line)
+  -- rule detection helper
+  local function is_rule(line)
+    for _,c in ipairs({'*', '-', '_'}) do
+      if line:match('^ ? ? ?%' .. c .. '[ \t%' .. c .. ']') and
+         line:gsub('[^ \t%' .. c .. ']', ''):len() == line:len() then
+        return true
+      end
+    end
+
+    return false
+  end
+
   -- blank
   if line == '' then
     return {type = 'blank'}
+  end
+
+  -- rules
+  if is_rule(line) then
+    return {type = 'rule'}
   end
 
   -- headers
@@ -217,7 +234,7 @@ end
 -- @return  line
 -----------------------------------------------------------------------------
 function emphasize(line)
-  if line.type == 'blank' then
+  if line.type == 'blank' or not line.text then
     return line
   end
 
@@ -271,7 +288,8 @@ function htmlize(lines)
     list_item = '<li>%s</li>',
     linebreak = '%s<br />',
     paragraph_start = '<p>%s',
-    paragraph_end = '%s</p>'
+    paragraph_end = '%s</p>',
+    rule = '<hr />'
   }
 
   -- list tag helper
@@ -321,6 +339,11 @@ function htmlize(lines)
 
   -- convert lines to html
   for index, line in ipairs(lines) do
+    -- rules
+    if line.type == 'rule' then
+      table.insert(htmlized, formats.rule)
+    end
+
     -- header
     if line.type == 'header' then
       table.insert(
