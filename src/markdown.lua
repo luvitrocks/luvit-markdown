@@ -178,6 +178,20 @@ function classify(line)
   end
 
   -- rules
+  if line:match('^[%=]+$') then
+    return {
+      type = 'rule_header',
+      level = 1
+    }
+  end
+
+  if line:match('^[%-]+$') then
+    return {
+      type = 'rule_header',
+      level = 2
+    }
+  end
+
   if is_rule(line) then
     return {type = 'rule'}
   end
@@ -188,7 +202,8 @@ function classify(line)
     return {
       type = 'header',
       level = h_level:len(),
-      text = h_text
+      text = h_text,
+      unmodified = line
     }
   end
 
@@ -198,7 +213,8 @@ function classify(line)
     return {
       type = 'list',
       style = 'numeric',
-      text = ol_text
+      text = ol_text,
+      unmodified = line
     }
   end
 
@@ -207,7 +223,8 @@ function classify(line)
     return {
       type = 'list',
       style = 'bullet',
-      text = ul_text
+      text = ul_text,
+      unmodified = line
     }
   end
 
@@ -330,7 +347,8 @@ function htmlize(lines)
     if cur_line.type == 'linebreak' and
        next_line and (paragraphs)[next_line.type] then
       line = formats.linebreak:format(line)
-    elseif not next_line or not (paragraphs)[next_line.type] then
+    elseif not next_line or not (paragraphs)[next_line.type] or
+           (lines[index+2] and 'rule_header' == lines[index+2].type) then
       line = formats.paragraph_end:format(line)
     end
 
@@ -339,6 +357,16 @@ function htmlize(lines)
 
   -- convert lines to html
   for index, line in ipairs(lines) do
+    -- header_rule detection
+    if lines[index+1] and lines[index+1].type == 'rule_header' then
+      line.type = 'header'
+      line.level = lines[index+1].level
+
+      if line.unmodified then
+        line.text = line.unmodified
+      end
+    end
+
     -- rules
     if line.type == 'rule' then
       table.insert(htmlized, formats.rule)
