@@ -73,11 +73,11 @@ function anchorize(text)
       return '[' .. id .. ']'
     end
 
-    if references[id].title then
-      return ('[%s](%s "%s")'):format(id, references[id].url, references[id].title)
-    else
+    if not references[id].title then
       return ('[%s](%s)'):format(id, references[id].url)
     end
+
+    return ('[%s](%s "%s")'):format(id, references[id].url, references[id].title)
   end
 
   -- inline converter
@@ -94,10 +94,14 @@ function anchorize(text)
 
       if url and title then
         return ('<a href="%s" title="%s">%s</a>'):format(url, title, text)
-      elseif url then
+      end
+
+      if url then
         return ('<a href="%s">%s</a>'):format(url, text)
       end
     end
+
+    return ''
   end
 
   -- parse references
@@ -180,14 +184,14 @@ function classify(line)
   -- rules
   if line:match('^[%=]+$') then
     return {
-      type = 'rule_header',
+      type  = 'rule_header',
       level = 1
     }
   end
 
   if line:match('^[%-]+$') then
     return {
-      type = 'rule_header',
+      type  = 'rule_header',
       level = 2
     }
   end
@@ -200,9 +204,9 @@ function classify(line)
   local h_level, h_text = line:match('^(#+)[ \t]*(.-)[ \t]*#*[ \t]*$')
   if h_level and 1 <= h_level:len() and h_level:len() <= 6 and h_text then
     return {
-      type = 'header',
-      level = h_level:len(),
-      text = h_text,
+      type       = 'header',
+      level      = h_level:len(),
+      text       = h_text,
       unmodified = line
     }
   end
@@ -211,9 +215,9 @@ function classify(line)
   local ol_text = line:match('^ ? ? ?%d+%.[ \t]+(.+)')
   if ol_text then
     return {
-      type = 'list',
-      style = 'numeric',
-      text = ol_text,
+      type       = 'list',
+      style      = 'numeric',
+      text       = ol_text,
       unmodified = line
     }
   end
@@ -221,9 +225,9 @@ function classify(line)
   local ul_text = line:match('^ ? ? ?[%*%+%-][ \t]+(.+)')
   if ul_text then
     return {
-      type = 'list',
-      style = 'bullet',
-      text = ul_text,
+      type       = 'list',
+      style      = 'bullet',
+      text       = ul_text,
       unmodified = line
     }
   end
@@ -257,7 +261,7 @@ function emphasize(line)
 
   emphasis = {
     strong = {'%*%*', '%_%_'},
-    em = {'%*', '%_'}
+    em     = {'%*', '%_'}
   }
 
   for _, strong in ipairs(emphasis.strong) do
@@ -295,37 +299,38 @@ end
 -----------------------------------------------------------------------------
 function htmlize(lines)
   local htmlized = {}
-
   local formats = {
-    header = '<h%u>%s</h%u>',
+    header             = '<h%u>%s</h%u>',
     list_numeric_start = '<ol>',
-    list_numeric_end = '</ol>',
-    list_bullet_start = '<ul>',
-    list_bullet_end = '</ul>',
-    list_item = '<li>%s</li>',
-    linebreak = '%s<br />',
-    paragraph_start = '<p>%s',
-    paragraph_end = '%s</p>',
-    rule = '<hr />'
+    list_numeric_end   = '</ol>',
+    list_bullet_start  = '<ul>',
+    list_bullet_end    = '</ul>',
+    list_item          = '<li>%s</li>',
+    linebreak          = '%s<br />',
+    paragraph_start    = '<p>%s',
+    paragraph_end      = '%s</p>',
+    rule               = '<hr />'
   }
 
   -- list tag helper
   local function list_line(index, line)
     local elements = {}
     local prev_line = lines[index-1]
-    local cur_line = lines[index]
+    local cur_line  = lines[index]
     local next_line = lines[index+1]
 
-    if not prev_line or not (prev_line.type == cur_line.type) or
-       not (prev_line.style == cur_line.style) then
+    if not prev_line or
+       prev_line.type ~= cur_line.type or
+       prev_line.style ~= cur_line.style then
       table.insert(elements, formats['list_' .. cur_line.style .. '_start'])
     end
 
     table.insert(elements, formats.list_item:format(line))
 
 
-    if not next_line or not (next_line.type == cur_line.type) or
-       not (next_line.style == cur_line.style) then
+    if not next_line or
+       next_line.type ~= cur_line.type or
+       next_line.style ~= cur_line.style then
       table.insert(elements, formats['list_' .. cur_line.style .. '_end'])
     end
 
@@ -334,10 +339,13 @@ function htmlize(lines)
 
   -- paragraph tag helper
   local function paragraph_line(index, line)
-    local paragraphs = { linebreak = 1, regular = 1 }
+    local paragraphs = {
+      linebreak = 1,
+      regular   = 1
+    }
 
     local prev_line = lines[index-1]
-    local cur_line = lines[index]
+    local cur_line  = lines[index]
     local next_line = lines[index+1]
 
     if not prev_line or not (paragraphs)[prev_line.type] then
@@ -347,7 +355,8 @@ function htmlize(lines)
     if cur_line.type == 'linebreak' and
        next_line and (paragraphs)[next_line.type] then
       line = formats.linebreak:format(line)
-    elseif not next_line or not (paragraphs)[next_line.type] or
+    elseif not next_line or
+           not (paragraphs)[next_line.type] or
            (lines[index+2] and 'rule_header' == lines[index+2].type) then
       line = formats.paragraph_end:format(line)
     end
@@ -359,7 +368,7 @@ function htmlize(lines)
   for index, line in ipairs(lines) do
     -- header_rule detection
     if lines[index+1] and lines[index+1].type == 'rule_header' then
-      line.type = 'header'
+      line.type  = 'header'
       line.level = lines[index+1].level
 
       if line.unmodified then
