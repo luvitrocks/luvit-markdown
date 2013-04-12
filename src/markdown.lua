@@ -67,6 +67,10 @@ function anchorize(text)
 
   -- reference converter
   local function set_references(id)
+    if '[]' == id then
+      return '[]'
+    end
+
     id = id:match('%[(.+)%]'):lower()
 
     if not references[id] then
