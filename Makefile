@@ -21,5 +21,5 @@ uninstall:
 	@echo "Uninstallation completed!"
 
 test:
-	@luvit src/test.lua
+	@luvit test/markdown.lua
 	@echo "Tests completed!"

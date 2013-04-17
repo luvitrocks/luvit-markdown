@@ -4,7 +4,7 @@
 -- @see http://daringfireball.net/projects/markdown/dingus
 -----------------------------------------------------------------------------
 
-local markdown = require './markdown'
+local markdown = require '../src/markdown'
 
 assert(type(markdown) == 'function')
 
