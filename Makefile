@@ -1,6 +1,8 @@
 PREFIX?=/usr/local
 LIBDIR?=${PREFIX}/lib/luvit
 
+.PHONY: test
+
 install:
 	@mkdir -p ${LIBDIR}
 	@if [ ! -w ${LIBDIR} ]; then \
