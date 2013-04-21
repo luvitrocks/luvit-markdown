@@ -30,6 +30,7 @@ local function sanitize(text)
 
   text = text:gsub('\r\n', '\n')
   text = text:gsub('\r', '\n')
+  text = text:gsub('\n[ \t\n]*\n', '\n\n')
 
   return text
 end
