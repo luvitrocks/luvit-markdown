@@ -1,41 +1,10 @@
 local table = require 'table'
 
+-- import utility functions
+local map, sanitize, split = require('./markdown/util.lua')()
+
 -- forward declaration of methods
-local anchorize, classify, convert, emphasize, htmlize, map, sanitize, split
-
------------------------------------------------------------------------------
--- Maps each entry of a table "t{i=v}" to a local function "f(v)".
---
--- @param   t
--- @param   f
--- @return  table
------------------------------------------------------------------------------
-function map(t, f)
-  local mapped = {}
-
-  for _, value in ipairs(t) do
-    table.insert(mapped, f(value))
-  end
-
-  return mapped
-end
-
------------------------------------------------------------------------------
--- Sanitizes text before conversion.
---
--- @param   text
--- @return  text
------------------------------------------------------------------------------
-function sanitize(text)
-  if not text or not text:len() then
-    return text
-  end
-
-  text = text:gsub('\r\n', '\n')
-  text = text:gsub('\r', '\n')
-
-  return text
-end
+local anchorize, classify, convert, emphasize, htmlize
 
 -----------------------------------------------------------------------------
 -- Converts link references to inline links.
@@ -117,31 +86,6 @@ function anchorize(text)
 
   -- parse anchors
   return text:gsub('(%b[])(%b())', set_inlines)
-end
-
------------------------------------------------------------------------------
--- Splits text to table of lines.
---
--- @param   text
--- @return  lines
------------------------------------------------------------------------------
-function split(text)
-  local lines = {}
-  local pos = 1
-
-  while true do
-    local left, right = text:find('\n', pos)
-
-    if not left then
-      table.insert(lines, text:sub(pos))
-      break
-    end
-
-    table.insert(lines, text:sub(pos, left - 1))
-    pos = right + 1
-  end
-
-  return lines
 end
 
 -----------------------------------------------------------------------------
