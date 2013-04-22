@@ -1,6 +1,6 @@
 return {
   {markdown = '# H1\nParagraph\n[linkage]: http://somepage.tld "with a title!"\n## H2 ##' ..
-              '\n\nLinebroken  \nParagraph\n## H2\n[linkage]\n* * * * *\n' ..
+              '\n\nLinebroken\t  \nParagraph\n## H2\n[linkage]\n* * * * *\n' ..
               'Paragraph with **emphasized** whitespace  \n### _H3_\n+ just a list\n1. stylechange!\n' ..
               '__incredible stuff__',
    html = '<h1>H1</h1>\n<p>Paragraph</p>\n<h2>H2</h2>\n<p>Linebroken  <br />\nParagraph</p>\n<h2>H2</h2>\n' ..

@@ -14,11 +14,11 @@ local anchorize, classify, convert, emphasize, htmlize
 -----------------------------------------------------------------------------
 function anchorize(text)
   local references = {}
-  local linkdef = ' ? ? ?(%b[]):[ \t]*([^%s]+)[ \t\n]'
+  local linkdef = ' ? ? ?(%b[]):[ ]*([^%s]+)[ \n]'
   local patterns = {
-    linkdef .. '[ \t]*["]([^\n]+)["][ \t]*',
-    linkdef .. '[ \t]*[\']([^\n]+)[\'][ \t]*',
-    linkdef .. '[ \t]*[(]([^\n]+)[)][ \t]*',
+    linkdef .. '[ ]*["]([^\n]+)["][ ]*',
+    linkdef .. '[ ]*[\']([^\n]+)[\'][ ]*',
+    linkdef .. '[ ]*[(]([^\n]+)[)][ ]*',
     linkdef
   }
 
@@ -57,8 +57,8 @@ function anchorize(text)
   local function set_inlines(text, def)
     text = text:match('%[(.+)%]'):lower()
     local patterns = {
-      '%((.-)[ \t]*"(.-)"%)',
-      '%((.-)[ \t]*\'(.-)\'%)',
+      '%((.-)[ ]*"(.-)"%)',
+      '%((.-)[ ]*\'(.-)\'%)',
       '%((.-)%)',
     }
 
@@ -115,8 +115,8 @@ function classify(line)
   -- rule detection helper
   local function is_rule(line)
     for _,c in ipairs({'*', '-', '_'}) do
-      if line:match('^ ? ? ?%' .. c .. '[ \t%' .. c .. ']') and
-         line:gsub('[^ \t%' .. c .. ']', ''):len() == line:len() then
+      if line:match('^ ? ? ?%' .. c .. '[ %' .. c .. ']') and
+         line:gsub('[^ %' .. c .. ']', ''):len() == line:len() then
         return true
       end
     end
@@ -149,7 +149,7 @@ function classify(line)
   end
 
   -- headers
-  local h_level, h_text = line:match('^(#+)[ \t]*(.-)[ \t]*#*[ \t]*$')
+  local h_level, h_text = line:match('^(#+)[ ]*(.-)[ ]*#*[ ]*$')
   if h_level and 1 <= h_level:len() and h_level:len() <= 6 and h_text then
     return {
       type       = 'header',
@@ -160,7 +160,7 @@ function classify(line)
   end
 
   -- lists
-  local ol_text = line:match('^ ? ? ?%d+%.[ \t]+(.+)')
+  local ol_text = line:match('^ ? ? ?%d+%.[ ]+(.+)')
   if ol_text then
     return {
       type       = 'list',
@@ -170,7 +170,7 @@ function classify(line)
     }
   end
 
-  local ul_text = line:match('^ ? ? ?[%*%+%-][ \t]+(.+)')
+  local ul_text = line:match('^ ? ? ?[%*%+%-][ ]+(.+)')
   if ul_text then
     return {
       type       = 'list',
