@@ -3,107 +3,8 @@ local table = require 'table'
 -- import utility functions
 local map, sanitize, split = require('./markdown/util.lua')()
 
--- forward declaration of methods
-local anchorize, classify, convert, emphasize, htmlize
-
------------------------------------------------------------------------------
--- Converts link references to inline links.
---
--- @param   text
--- @return  text
------------------------------------------------------------------------------
-function anchorize(text)
-  local references = {}
-  local linkdef = ' ? ? ?(%b[]):[ ]*([^%s]+)[ \n]'
-  local patterns = {
-    linkdef .. '[ ]*["]([^\n]+)["][ ]*',
-    linkdef .. '[ ]*[\']([^\n]+)[\'][ ]*',
-    linkdef .. '[ ]*[(]([^\n]+)[)][ ]*',
-    linkdef
-  }
-
-  -- reference indexer
-  local function get_references(id, url, title)
-    id = id:match('%[(.+)%]'):lower()
-
-    references[id] = {
-      url = url,
-      title = title
-    }
-
-    return ''
-  end
-
-  -- reference converter
-  local function set_references(id)
-    if '[]' == id then
-      return '[]'
-    end
-
-    id = id:match('%[(.+)%]'):lower()
-
-    if not references[id] then
-      return '[' .. id .. ']'
-    end
-
-    if not references[id].title then
-      return ('[%s](%s)'):format(id, references[id].url)
-    end
-
-    return ('[%s](%s "%s")'):format(id, references[id].url, references[id].title)
-  end
-
-  -- inline converter
-  local function set_inlines(text, def)
-    text = text:match('%[(.+)%]'):lower()
-    local patterns = {
-      '%((.-)[ ]*"(.-)"%)',
-      '%((.-)[ ]*\'(.-)\'%)',
-      '%((.-)%)',
-    }
-
-    for _, pattern in ipairs(patterns) do
-      local url, title = def:match(pattern)
-
-      if url and title then
-        return ('<a href="%s" title="%s">%s</a>'):format(url, title, text)
-      end
-
-      if url then
-        return ('<a href="%s">%s</a>'):format(url, text)
-      end
-    end
-
-    return ''
-  end
-
-  -- parse references
-  for _,pattern in ipairs(patterns) do
-    text = text:gsub(pattern, get_references)
-  end
-
-  text = text:gsub('(%b[])[^(\n]?', set_references)
-
-  -- parse anchors
-  return text:gsub('(%b[])(%b())', set_inlines)
-end
-
------------------------------------------------------------------------------
--- Converts text from Markdown to HTML.
---
--- @param   text
--- @return  text
------------------------------------------------------------------------------
-function convert(text)
-  local lines = split(text)
-
-  lines = map(lines, classify)
-  lines = map(lines, emphasize)
-
-  lines = htmlize(lines)
-
-  return table.concat(lines, '\n')
-end
+-- protected line storage
+local protected = {}
 
 -----------------------------------------------------------------------------
 -- Classifies a line to a Markdown type.
@@ -111,7 +12,7 @@ end
 -- @param   line
 -- @return  line
 -----------------------------------------------------------------------------
-function classify(line)
+local function classify(line)
   -- rule detection helper
   local function is_rule(line)
     for _,c in ipairs({'*', '-', '_'}) do
@@ -122,6 +23,14 @@ function classify(line)
     end
 
     return false
+  end
+
+  -- protected lines
+  if protected[line] then
+    return {
+      type = 'raw',
+      text = line
+    }
   end
 
   -- blank
@@ -202,8 +111,8 @@ end
 -- @param   line
 -- @return  line
 -----------------------------------------------------------------------------
-function emphasize(line)
-  if line.type == 'blank' or not line.text then
+local function emphasize(line)
+  if line.type == 'blank' or line.type == 'raw' or not line.text then
     return line
   end
 
@@ -245,7 +154,7 @@ end
 -- @param   lines
 -- @return  lines
 -----------------------------------------------------------------------------
-function htmlize(lines)
+local function htmlize(lines)
   local htmlized = {}
   local formats = {
     header             = '<h%u>%s</h%u>',
@@ -351,9 +260,142 @@ function htmlize(lines)
         paragraph_line(index, line.text)
       )
     end
+
+    -- raw lines
+    if line.type == 'raw' then
+      table.insert(htmlized, line.text)
+    end
   end
 
   return htmlized
+end
+
+-----------------------------------------------------------------------------
+-- Converts link references to inline links.
+--
+-- @param   text
+-- @return  text
+-----------------------------------------------------------------------------
+local function anchorize(text)
+  local references = {}
+  local linkdef = ' ? ? ?(%b[]):[ ]*([^%s]+)[ \n]'
+  local patterns = {
+    linkdef .. '[ ]*["]([^\n]+)["][ ]*',
+    linkdef .. '[ ]*[\']([^\n]+)[\'][ ]*',
+    linkdef .. '[ ]*[(]([^\n]+)[)][ ]*',
+    linkdef
+  }
+
+  -- reference indexer
+  local function get_references(id, url, title)
+    id = id:match('%[(.+)%]'):lower()
+
+    references[id] = {
+      url = url,
+      title = title
+    }
+
+    return ''
+  end
+
+  -- reference converter
+  local function set_references(id)
+    if '[]' == id then
+      return '[]'
+    end
+
+    id = id:match('%[(.+)%]'):lower()
+
+    if not references[id] then
+      return '[' .. id .. ']'
+    end
+
+    if not references[id].title then
+      return ('[%s](%s)'):format(id, references[id].url)
+    end
+
+    return ('[%s](%s "%s")'):format(id, references[id].url, references[id].title)
+  end
+
+  -- inline converter
+  local function set_inlines(text, def)
+    text = text:match('%[(.+)%]'):lower()
+    local patterns = {
+      '%((.-)[ ]*"(.-)"%)',
+      '%((.-)[ ]*\'(.-)\'%)',
+      '%((.-)%)',
+    }
+
+    for _, pattern in ipairs(patterns) do
+      local url, title = def:match(pattern)
+
+      if url and title then
+        return ('<a href="%s" title="%s">%s</a>'):format(url, title, text)
+      end
+
+      if url then
+        return ('<a href="%s">%s</a>'):format(url, text)
+      end
+    end
+
+    return ''
+  end
+
+  -- parse references
+  for _,pattern in ipairs(patterns) do
+    text = text:gsub(pattern, get_references)
+  end
+
+  text = text:gsub('(%b[])[^(\n]?', set_references)
+
+  -- parse anchors
+  return text:gsub('(%b[])(%b())', set_inlines)
+end
+
+-----------------------------------------------------------------------------
+-- Detects plain HTML prior to conversion and protectes these blocks.
+--
+-- @param   text
+-- @return  text
+-----------------------------------------------------------------------------
+local function protect(text)
+  local tags = {
+    'blockquote', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'pre', 'table'
+  }
+
+  for _, tag in pairs(tags) do
+    local tag_text = text:match('\n ? ? ?<' .. tag .. '.-</' .. tag .. '> *\n\n')
+
+    if tag_text then
+      block_text = tag_text:gsub(' ? ? ?(.+) *\n\n', '%1')
+      local block_lines = split(block_text)
+
+      for _, block_line in pairs(block_lines) do
+        protected[block_line] = true
+      end
+
+      text:gsub(tag_text, block_text)
+    end
+  end
+
+  return text
+end
+
+-----------------------------------------------------------------------------
+-- Converts text from Markdown to HTML.
+--
+-- @param   text
+-- @return  text
+-----------------------------------------------------------------------------
+local function convert(text)
+  local lines = split(text)
+
+  lines = map(lines, classify)
+  lines = map(lines, emphasize)
+
+  lines = htmlize(lines)
+
+  return table.concat(lines, '\n')
 end
 
 -----------------------------------------------------------------------------
@@ -369,7 +411,8 @@ return function(text)
 
   text = sanitize(text)
   text = anchorize(text)
+  text = protect(text)
   text = convert(text)
 
-  return text
+  return text:gsub('^[ \n]*', '')
 end

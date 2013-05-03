@@ -18,8 +18,8 @@ local function testset(title, tests)
     else
       process.stdout:write(
         '\n\n- Error!\n' ..
-        'Expected: ' .. test.html .. '\n' ..
-        'Returned: ' .. markdown(test.markdown) .. '\n'
+        'Expected: ' .. test.html:gsub('\n', '\\n') .. '\n' ..
+        'Returned: ' .. markdown(test.markdown):gsub('\n', '\\n') .. '\n'
       )
     end
 
@@ -29,11 +29,12 @@ local function testset(title, tests)
 end
 
 -- test sets
+testset('HTML', require('./_html'))
 testset('Rules', require('./_rules'))
 testset('Headers', require('./_headers'))
 testset('Lists', require('./_lists'))
 testset('Paragraphs + Linebreaks', require('./_paragraphs'))
-testset('Blockquotes', require('./_blockquotes'))
+--testset('Blockquotes', require('./_blockquotes'))
 testset('Emphasis', require('./_emphasis'))
 testset('Anchors', require('./_anchors'))
 testset('Document', require('./_document'))

@@ -33,7 +33,11 @@ local function sanitize(text)
   text = text:gsub('\n[ \t\n]*\n', '\n\n')
 
   text = text:gsub('\t', '    ')
-  text = text:gsub('[ ]+  ', '  ')
+  text = text:gsub('[ ]+  $', '  ')
+
+  if not text:match('^\n.*') then
+    text = '\n' .. text
+  end
 
   return text
 end
