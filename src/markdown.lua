@@ -58,7 +58,7 @@ local function classify(line)
   end
 
   -- headers
-  local h_level, h_text = line:match('^(#+)[ ]*(.-)[ ]*#*[ ]*$')
+  local h_level, h_text = line:match('^(#+) *(.-) *#* *$')
   if h_level and 1 <= h_level:len() and h_level:len() <= 6 and h_text then
     return {
       type       = 'header',
@@ -69,7 +69,7 @@ local function classify(line)
   end
 
   -- lists
-  local ol_text = line:match('^ ? ? ?%d+%.[ ]+(.+)')
+  local ol_text = line:match('^ ? ? ?%d+%. +(.+)')
   if ol_text then
     return {
       type       = 'list',
@@ -79,7 +79,7 @@ local function classify(line)
     }
   end
 
-  local ul_text = line:match('^ ? ? ?[%*%+%-][ ]+(.+)')
+  local ul_text = line:match('^ ? ? ?[%*%+%-] +(.+)')
   if ul_text then
     return {
       type       = 'list',
@@ -278,11 +278,11 @@ end
 -----------------------------------------------------------------------------
 local function anchorize(text)
   local references = {}
-  local linkdef = ' ? ? ?(%b[]):[ ]*([^%s]+)[ \n]'
+  local linkdef = ' ? ? ?(%b[]): *([^%s]+)[ \n]'
   local patterns = {
-    linkdef .. '[ ]*["]([^\n]+)["][ ]*',
-    linkdef .. '[ ]*[\']([^\n]+)[\'][ ]*',
-    linkdef .. '[ ]*[(]([^\n]+)[)][ ]*',
+    linkdef .. ' *["]([^\n]+)["] *',
+    linkdef .. ' *[\']([^\n]+)[\'] *',
+    linkdef .. ' *[(]([^\n]+)[)] *',
     linkdef
   }
 
@@ -321,8 +321,8 @@ local function anchorize(text)
   local function set_inlines(text, def)
     text = text:match('%[(.+)%]'):lower()
     local patterns = {
-      '%((.-)[ ]*"(.-)"%)',
-      '%((.-)[ ]*\'(.-)\'%)',
+      '%((.-) *"(.-)"%)',
+      '%((.-) *\'(.-)\'%)',
       '%((.-)%)',
     }
 
