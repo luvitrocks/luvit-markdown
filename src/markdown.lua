@@ -89,6 +89,15 @@ local function classify(line)
     }
   end
 
+  -- blockquotes
+  local bq_text = line:match('^> ?(.*)$')
+  if bq_text then
+    return {
+      type = 'blockquote',
+      text = bq_text
+    }
+  end
+
   -- line breaks
   local br_text = line:match('^.*  $')
   if br_text then
@@ -157,6 +166,8 @@ end
 local function htmlize(lines)
   local htmlized = {}
   local formats = {
+    blockquote_start   = '<blockquote>\n%s',
+    blockquote_end     = '%s\n</blockquote>',
     header             = '<h%u>%s</h%u>',
     list_numeric_start = '<ol>',
     list_numeric_end   = '</ol>',
@@ -184,7 +195,6 @@ local function htmlize(lines)
 
     table.insert(elements, formats.list_item:format(line))
 
-
     if not next_line or
        next_line.type ~= cur_line.type or
        next_line.style ~= cur_line.style then
@@ -197,8 +207,8 @@ local function htmlize(lines)
   -- paragraph tag helper
   local function paragraph_line(index, line)
     local paragraphs = {
-      linebreak = 1,
-      regular   = 1
+      linebreak  = 1,
+      regular    = 1
     }
 
     local prev_line = lines[index-1]
@@ -210,12 +220,49 @@ local function htmlize(lines)
     end
 
     if cur_line.type == 'linebreak' and
-       next_line and (paragraphs)[next_line.type] then
+       next_line and ((paragraphs)[next_line.type] or 'blockquote' == next_line.type) then
       line = formats.linebreak:format(line)
     elseif not next_line or
            not (paragraphs)[next_line.type] or
            (lines[index+2] and 'rule_header' == lines[index+2].type) then
       line = formats.paragraph_end:format(line)
+    end
+
+    return line
+  end
+
+  -- blockquote tag helper
+  local function blockquote_line(index, line)
+    if 0 == line:len() then
+      return ''
+    end
+
+    local paragraphs = {
+      blockquote = 1,
+      linebreak  = 1,
+      regular    = 1
+    }
+
+    local prev_line = lines[index-1]
+    local cur_line  = lines[index]
+    local next_line = lines[index+1]
+
+    if line:match('^.*  $') then
+      lines[index].type = 'linebreak'
+    end
+
+    line = paragraph_line(index, line)
+
+    if not prev_line or not (paragraphs)[prev_line.type] then
+      line = formats.blockquote_start:format(line)
+    end
+
+    if next_line and (paragraphs)[next_line.type] then
+      lines[index+1].type = 'blockquote'
+    end
+
+    if not next_line or next_line.type ~= 'blockquote' then
+      line = formats.blockquote_end:format(line)
     end
 
     return line
@@ -258,6 +305,14 @@ local function htmlize(lines)
       table.insert(
         htmlized,
         paragraph_line(index, line.text)
+      )
+    end
+
+    -- blockquotes
+    if line.type == 'blockquote' then
+      table.insert(
+        htmlized,
+        blockquote_line(index, line.text)
       )
     end
 
