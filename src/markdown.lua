@@ -98,6 +98,15 @@ local function classify(line)
     }
   end
 
+  -- codeblocks
+  local cb_text = line:match('^    (.*)$')
+  if cb_text then
+    return {
+      type = 'codeblock',
+      text = cb_text
+    }
+  end
+
   -- line breaks
   local br_text = line:match('^.*  $')
   if br_text then
@@ -168,6 +177,8 @@ local function htmlize(lines)
   local formats = {
     blockquote_start   = '<blockquote>\n%s',
     blockquote_end     = '%s\n</blockquote>',
+    codeblock_start    = '<pre><code>%s',
+    codeblock_end      = '%s\n</code></pre>',
     header             = '<h%u>%s</h%u>',
     list_numeric_start = '<ol>',
     list_numeric_end   = '</ol>',
@@ -268,6 +279,23 @@ local function htmlize(lines)
     return line
   end
 
+  -- codeblock tag helper
+  local function codeblock_line(index, line)
+    local prev_line = lines[index-1]
+    local cur_line  = lines[index]
+    local next_line = lines[index+1]
+
+    if not(prev_line) or prev_line.type ~= 'codeblock' then
+      line = formats.codeblock_start:format(line)
+    end
+
+    if not(next_line) or next_line.type ~= 'codeblock' then
+      line = formats.codeblock_end:format(line)
+    end
+
+    return line
+  end
+
   -- convert lines to html
   for index, line in ipairs(lines) do
     -- header_rule detection
@@ -313,6 +341,14 @@ local function htmlize(lines)
       table.insert(
         htmlized,
         blockquote_line(index, line.text)
+      )
+    end
+
+    -- codeblocks
+    if line.type == 'codeblock' then
+      table.insert(
+        htmlized,
+        codeblock_line(index, line.text)
       )
     end
 
