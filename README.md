@@ -19,3 +19,17 @@ The following options can be passed to make
     LIBDIR?=${PREFIX}/lib/luvit
 
 Depending on your luvit installation you might need to adjust those folders.
+
+## Markdown Features Parsed
+
+More or less according to specification...
+
+- Anchors
+- Blockquotes
+- Codeblocks
+- Emphasis (strong / em)
+- Headers
+- HTML
+- Lists
+- Paragraphs
+- Rules
